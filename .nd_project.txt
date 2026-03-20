@@ -82,10 +82,10 @@ Timestamp: yyyy-mm-dd
 # Source Code
 # ------------------------------------------------------------------------
 
-Source Folder: ..\src\ClassModules
+Source Folder: ../src/ClassModules
    Name: Class Modules
 
-Source Folder 2: ..\src\Modules
+Source Folder 2: ../src/Modules
    Name: Modules
 
 
@@ -164,7 +164,7 @@ Source Folder 2: ..\src\Modules
 # Generated Documentation
 # ------------------------------------------------------------------------
 
-HTML Output Folder: ..\docs
+HTML Output Folder: ../docs
 
 
 # This is where you tell Natural Docs what kind of documentation you want
