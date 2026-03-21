@@ -76,7 +76,7 @@ Const MODULE_VERSION = "2026.03.20"  ' call [QueryBuilder].MODULE_VERSION  as ot
 '          .WhereBetween("price", 10, 100) _
 '          .ToSql()
 '   ============
-'   Returns:
+'   Result:
 '   === SQL ====
 '       SELECT * FROM [products] WHERE [price] BETWEEN 10 AND 100
 '   ============
