@@ -1,4 +1,7 @@
-# QueryBuilder.cls
+[![Lint VBA](https://github.com/scottsweep/VBA-FluentQueryBuilder/actions/workflows/lint_vba.yml/badge.svg?branch=main)](https://github.com/scottsweep/VBA-FluentQueryBuilder/actions/workflows/lint_vba.yml)
+<a href="https://scottsweep.github.io/VBA-FluentQueryBuilder/#VisualBasicClass:QueryBuilder"><img src="https://img.shields.io/badge/code-documented-green.svg"/></a>
+
+# QueryBuilder
 
 Fluent SQL query builder for VBA (Excel, Access, VB6), with parameterized ADO execution.
 
