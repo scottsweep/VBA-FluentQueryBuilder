@@ -1,8 +1,12 @@
+Attribute VB_Name = "modQueryBuilderDemo"
 Option Explicit
 
+' Class: QueryBuilderDemo
 ' Demo module showing QueryBuilder usage
 ' Requires: Microsoft ActiveX Data Objects 2.8 Library (or later)
 
+' Function: DemoQueryBuilder
+' Demonstrates various QueryBuilder features by constructing different SQL queries and printing them to the Immediate Window
 Public Sub DemoQueryBuilder()
     ' Example 1: Basic SELECT with ToSql (no DB connection needed)
     Dim q As QueryBuilder
@@ -127,7 +131,7 @@ Public Sub DemoQueryBuilder()
      .GroupByColumns("role") _
      .OrderByClause("created_at", "desc") _
      .Take(25) _
-     .SkipRows(50)
+     .SkipRows (50)
 
     Debug.Print "Example 8 - SQL Parts (parameterized):"
     ' Expected parts are fully-formed clauses (or empty string if unset), with quoted identifiers.
@@ -216,4 +220,6 @@ Public Sub DemoQueryBuilder()
 
     MsgBox "QueryBuilder demo completed. Check Immediate Window (Ctrl+G) for output.", vbInformation
 End Sub
+
+
 

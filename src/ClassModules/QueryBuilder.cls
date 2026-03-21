@@ -8,8 +8,28 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
+' ------------------------------------------------------
+' Name: QueryBuilder
+' Kind: Class Module
+' Purpose: Fluent Query Builder
+' Author: Scott Connelly
+' Date: 3/19/2026
+' ------------------------------------------------------
+
+Const MODULE_VERSION = "2026.03.20"  ' call [QueryBuilder].MODULE_VERSION  as other modules also use MODULE_VERSION
+
+'-------------------------------------------------------------------------------'
+'
+'   Change Log
+'
+'   2026.03.19 - SSC - Initial Release
+'   2026.03.20 - SSC - Updated documentation and comments for clarity and completeness
+'
+'-------------------------------------------------------------------------------'
+
+' Class: QueryBuilder
 ' ============================================================================
-' QueryBuilder Class - Fluent SQL Query Builder for VBA
+' About: QueryBuilder Class - Fluent SQL Query Builder for VBA
 ' ============================================================================
 '
 ' PURPOSE:
@@ -18,20 +38,21 @@ Attribute VB_Exposed = False
 '   ORDER BY, LIMIT, and OFFSET clauses.
 '
 ' FEATURES:
-'   • Fluent API for method chaining
-'   • Parameterized queries for SQL injection safety
-'   • Support for BETWEEN clauses with dual bindings
-'   • Support for IN (...) and grouped WHERE clauses
-'   • Bracket-quoted identifiers in generated SQL (e.g., [users].[id])
-'   • SQL generation and execution via ADO
-'   • SQL-part getter methods (GetWhereClause, GetGroupByClause, etc.)
-'   • Compatible with MySQL, SQL Server, and other ODBC databases
+'   - Fluent API for method chaining
+'   - Parameterized queries for SQL injection safety
+'   - Support for BETWEEN clauses with dual bindings
+'   - Support for IN (...) and grouped WHERE clauses
+'   - Bracket-quoted identifiers in generated SQL (e.g., [users].[id])
+'   - SQL generation and execution via ADO
+'   - SQL-part getter methods (GetWhereClause, GetGroupByClause, etc.)
+'   - Compatible with MySQL, SQL Server, and other ODBC databases
 '
 ' DEPENDENCIES:
-'   • Microsoft ActiveX Data Objects 2.8 Library (or later)
-'   • Scripting Runtime (for Dictionary support in Insert/Update)
+'   - Microsoft ActiveX Data Objects 2.8 Library (or later)
+'   - Scripting Runtime (for Dictionary support in Insert/Update)
 '
 ' BASIC USAGE EXAMPLE:
+'   === Code ===
 '   Dim q As QueryBuilder
 '   Set q = New QueryBuilder
 '   Dim sql As String
@@ -41,16 +62,27 @@ Attribute VB_Exposed = False
 '          .OrderByClause("name", "ASC") _
 '          .Take(10) _
 '          .ToSql()
-'   ' Returns: SELECT * FROM [users] WHERE [age] > 18 ORDER BY [name] ASC LIMIT 10
+'
+'   ============
+'   Result:
+'   === SQL ====
+'       SELECT * FROM [users] WHERE [age] > 18 ORDER BY [name] ASC LIMIT 10
+'   ============
 '
 ' BETWEEN EXAMPLE:
+'   === Code ===
 '   sql = q.Table("products") _
 '          .SelectColumns("*") _
 '          .WhereBetween("price", 10, 100) _
 '          .ToSql()
-'   ' Returns: SELECT * FROM [products] WHERE [price] BETWEEN 10 AND 100
+'   ============
+'   Returns:
+'   === SQL ====
+'       SELECT * FROM [products] WHERE [price] BETWEEN 10 AND 100
+'   ============
 '
 ' DATABASE QUERY EXAMPLE:
+'   === Code ===
 '   Dim conn As Object
 '   Set conn = CreateObject("ADODB.Connection")
 '   conn.Open "Driver={MySQL};Server=localhost;Database=mydb;..."
@@ -65,6 +97,7 @@ Attribute VB_Exposed = False
 '   End If
 '   rs.Close
 '   conn.Close
+'   ============
 '
 ' ============================================================================
 
@@ -95,7 +128,9 @@ Private mOpenWhereGroups As Long            ' Tracks open where-group parenthese
 ' CLASS INITIALIZATION AND CONNECTION
 ' ============================================================================
 
-' Class_Initialize
+' Group: Initialization and Connection
+
+' Sub: Class_Initialize [Private]
 ' Initializes all collections and state to defaults when a new instance is created
 ' Called automatically by VBA when: Set q = New QueryBuilder
 '
@@ -112,7 +147,7 @@ Private Sub Class_Initialize()
     mOpenWhereGroups = 0
 End Sub
 
-' SetConnection
+' Sub: SetConnection
 ' Stores the ADO connection object for use with GetRows(), CountRows(), etc.
 '
 ' Parameters:
@@ -121,10 +156,12 @@ End Sub
 ' Returns: (None - sets internal reference)
 '
 ' Example:
+'   === Code ===
 '   Dim conn As Object
 '   Set conn = CreateObject("ADODB.Connection")
 '   conn.Open "Provider=MSDASQL;Driver={MySQL ODBC Driver};Server=localhost;Database=mydb;User=root;Password=pass;"
 '   q.SetConnection conn
+'   ============
 '
 Public Sub SetConnection(ByVal connection As Object)
     Set mPDO = connection
@@ -135,7 +172,9 @@ End Sub
 ' FOUNDATION METHODS - TABLE AND SELECT
 ' ============================================================================
 
-' Table
+' Group: Foundation Methods - Table and Select
+
+' Function: Table
 ' Sets the table name for the query
 '
 ' Parameters:
@@ -144,14 +183,16 @@ End Sub
 ' Returns: QueryBuilder (Self for method chaining)
 '
 ' Example:
+'   === Code ===
 '   q.Table("users") -> SELECT * FROM users
+'   ============
 '
 Public Function Table(ByVal tblName As String) As QueryBuilder
     mTable = tblName
     Set Table = Me
 End Function
 
-' SelectColumns
+' Function: SelectColumns
 ' Sets the SELECT clause columns
 '
 ' Parameters:
@@ -160,7 +201,9 @@ End Function
 ' Returns: QueryBuilder (Self for method chaining)
 '
 ' Example:
+'   === Code ===
 '   q.SelectColumns("id, name") or q.SelectColumns(Array("id", "name"))
+'   ============
 '
 Public Function SelectColumns(ByVal columns As Variant) As QueryBuilder
     If IsArray(columns) Then
@@ -176,7 +219,9 @@ End Function
 ' JOIN AND GROUP BY METHODS
 ' ============================================================================
 
-' JoinClause
+' Group: JOIN and GROUP BY Methods
+
+' Function: JoinClause
 ' Adds a JOIN clause to the query
 '
 ' Parameters:
@@ -189,14 +234,16 @@ End Function
 ' Returns: QueryBuilder (Self for method chaining)
 '
 ' Example:
+'   === Code ===
 '   q.JoinClause("cars", "users.id", "=", "cars.user_id", "left")
+'   ============
 '
 Public Function JoinClause(ByVal tblName As String, ByVal firstColumn As String, ByVal op As String, ByVal secondColumn As String, Optional ByVal joinType As String = "INNER") As QueryBuilder
     mJoins.Add UCase$(joinType) & " JOIN " & QuoteIdentifierPath(tblName) & " ON " & QuoteIdentifierPath(firstColumn) & " " & op & " " & QuoteIdentifierPath(secondColumn)
     Set JoinClause = Me
 End Function
 
-' GroupByColumns
+' Function: GroupByColumns
 ' Sets the GROUP BY clause columns
 '
 ' Parameters:
@@ -205,16 +252,18 @@ End Function
 ' Returns: QueryBuilder (Self for method chaining)
 '
 ' Example:
+'   === Code ===
 '   q.GroupByColumns("category") or q.GroupByColumns(Array("category", "status"))
+'   ============
 '
 Public Function GroupByColumns(ByVal columns As Variant) As QueryBuilder
-    Dim i As Long
+    Dim I As Long
     Set mGroupBy = New Collection
 
     If IsArray(columns) Then
-        For i = LBound(columns) To UBound(columns)
-            mGroupBy.Add CStr(columns(i))
-        Next i
+        For I = LBound(columns) To UBound(columns)
+            mGroupBy.Add CStr(columns(I))
+        Next I
     Else
         mGroupBy.Add CStr(columns)
     End If
@@ -227,7 +276,9 @@ End Function
 ' LIMIT, OFFSET, AND ORDER BY METHODS
 ' ============================================================================
 
-' Take
+' Group: LIMIT, OFFSET, and ORDER BY Methods
+
+' Function: Take
 ' Sets the LIMIT clause for the query
 '
 ' Parameters:
@@ -236,14 +287,16 @@ End Function
 ' Returns: QueryBuilder (Self for method chaining)
 '
 ' Example:
+'   === Code ===
 '   q.Take(10) -> LIMIT 10
+'   ============
 '
 Public Function Take(ByVal limitValue As Long) As QueryBuilder
     mLimit = limitValue
     Set Take = Me
 End Function
 
-' SkipRows
+' Function: SkipRows
 ' Sets the OFFSET clause for the query (for pagination)
 '
 ' Parameters:
@@ -252,14 +305,16 @@ End Function
 ' Returns: QueryBuilder (Self for method chaining)
 '
 ' Example:
+'   === Code ===
 '   q.Take(10).SkipRows(20) -> LIMIT 10 OFFSET 20 (page 3 with 10 items per page)
+'   ============
 '
 Public Function SkipRows(ByVal offsetValue As Long) As QueryBuilder
     mOffset = offsetValue
     Set SkipRows = Me
 End Function
 
-' UseSqlServerPagination
+' Function: UseSqlServerPagination
 ' Enables SQL Server-style pagination output.
 '   - limit only: SELECT TOP (n) ...
 '   - offset only: ... ORDER BY ... OFFSET n ROWS
@@ -270,7 +325,7 @@ Public Function UseSqlServerPagination(Optional ByVal enabled As Boolean = True)
     Set UseSqlServerPagination = Me
 End Function
 
-' UseStandardPagination
+' Function: UseStandardPagination
 ' Restores default LIMIT / OFFSET output.
 '
 Public Function UseStandardPagination() As QueryBuilder
@@ -278,7 +333,7 @@ Public Function UseStandardPagination() As QueryBuilder
     Set UseStandardPagination = Me
 End Function
 
-' OrderByClause
+' Function: OrderByClause
 ' Sets the ORDER BY clause
 '
 ' Parameters:
@@ -290,7 +345,9 @@ End Function
 ' Raises: InvalidArgumentException if direction is not "ASC" or "DESC"
 '
 ' Example:
+'   === Code ===
 '   q.OrderByClause("name", "ASC") -> ORDER BY name ASC
+'   ============
 '
 Public Function OrderByClause(ByVal col As String, Optional ByVal direction As String = "ASC") As QueryBuilder
     direction = UCase$(direction)
@@ -307,7 +364,9 @@ End Function
 ' WHERE CLAUSE METHODS
 ' ============================================================================
 
-' WhereClause
+' Group: WHERE Clause Methods
+
+' Function: WhereClause
 ' Adds a WHERE condition to the query
 '
 ' Parameters:
@@ -319,8 +378,10 @@ End Function
 ' Returns: QueryBuilder (Self for method chaining)
 '
 ' Example:
+'   === Code ===
 '   q.WhereClause("age", ">", 18).AndWhere("status", "=", "active")
 '   ' Generates: WHERE age > ? AND status = ?
+'   ============
 '
 Public Function WhereClause(ByVal col As String, ByVal op As String, ByVal val As Variant, Optional ByVal boolOp As String = vbNullString) As QueryBuilder
     mWhere.Add Array(col, op, val, NormalizeBoolean(boolOp), False, Empty, Empty, "COMPARE")
@@ -328,7 +389,7 @@ Public Function WhereClause(ByVal col As String, ByVal op As String, ByVal val A
     Set WhereClause = Me
 End Function
 
-' AndWhere
+' Function: AndWhere
 ' Adds a WHERE condition with AND operator
 '
 ' Parameters:
@@ -345,7 +406,7 @@ Public Function AndWhere(ByVal col As String, ByVal op As String, ByVal val As V
     Set AndWhere = WhereClause(col, op, val, "AND")
 End Function
 
-' OrWhere
+' Function: OrWhere
 ' Adds a WHERE condition with OR operator
 '
 ' Parameters:
@@ -356,13 +417,15 @@ End Function
 ' Returns: QueryBuilder (Self for method chaining)
 '
 ' Example:
+'   === Code ===
 '   q.WhereClause("status", "=", "active").OrWhere("status", "=", "pending")
+'   ============
 '
 Public Function OrWhere(ByVal col As String, ByVal op As String, ByVal val As Variant) As QueryBuilder
     Set OrWhere = WhereClause(col, op, val, "OR")
 End Function
 
-' WhereBetween
+' Function: WhereBetween
 ' Adds a BETWEEN condition to the query
 '
 ' Parameters:
@@ -377,8 +440,13 @@ End Function
 '   BETWEEN adds TWO parameter bindings to support the range
 '
 ' Example:
+'   === Code ===
 '   q.WhereBetween("price", 10, 100)
-'   ' Generates: WHERE price BETWEEN ? AND ?
+'   ============
+'   Generates:
+'   === SQL ====
+'       WHERE price BETWEEN ? AND ?
+'   ============
 '
 Public Function WhereBetween(ByVal col As String, ByVal fromVal As Variant, ByVal toVal As Variant, Optional ByVal boolOp As String = vbNullString) As QueryBuilder
     mWhere.Add Array(col, "BETWEEN", Empty, NormalizeBoolean(boolOp), True, fromVal, toVal, "BETWEEN")
@@ -387,7 +455,7 @@ Public Function WhereBetween(ByVal col As String, ByVal fromVal As Variant, ByVa
     Set WhereBetween = Me
 End Function
 
-' AndWhereBetween
+' Function: AndWhereBetween
 ' Adds a BETWEEN condition with AND operator
 '
 ' Parameters:
@@ -398,13 +466,15 @@ End Function
 ' Returns: QueryBuilder (Self for method chaining)
 '
 ' Example:
+'   === Code ===
 '   q.WhereClause("status", "=", "active").AndWhereBetween("price", 10, 100)
+'   ============
 '
 Public Function AndWhereBetween(ByVal col As String, ByVal fromVal As Variant, ByVal toVal As Variant) As QueryBuilder
     Set AndWhereBetween = WhereBetween(col, fromVal, toVal, "AND")
 End Function
 
-' OrWhereBetween
+' Function: OrWhereBetween
 ' Adds a BETWEEN condition with OR operator
 '
 ' Parameters:
@@ -415,13 +485,15 @@ End Function
 ' Returns: QueryBuilder (Self for method chaining)
 '
 ' Example:
+'   === Code ===
 '   q.WhereClause("category", "=", "premium").OrWhereBetween("price", 100, 500)
+'   ============
 '
 Public Function OrWhereBetween(ByVal col As String, ByVal fromVal As Variant, ByVal toVal As Variant) As QueryBuilder
     Set OrWhereBetween = WhereBetween(col, fromVal, toVal, "OR")
 End Function
 
-' WhereIn
+' Function: WhereIn
 ' Adds an IN (...) condition to the query
 '
 ' Parameters:
@@ -432,41 +504,76 @@ End Function
 ' Returns: QueryBuilder (Self for method chaining)
 '
 ' Example:
+'   === Code ===
 '   q.WhereIn("status", Array("active", "pending"))
-'   ' Generates: WHERE status IN (?, ?)
+'   ============
+'   Generates:
+'   === SQL ====
+'       WHERE status IN (?, ?)
+'   ============
 '
 Public Function WhereIn(ByVal col As String, ByVal values As Variant, Optional ByVal boolOp As String = vbNullString) As QueryBuilder
     Dim normalizedValues As Variant
-    Dim i As Long
+    Dim I As Long
 
     normalizedValues = NormalizeInValues(values)
     mWhere.Add Array(col, "IN", normalizedValues, NormalizeBoolean(boolOp), False, Empty, Empty, "IN")
 
-    For i = LBound(normalizedValues) To UBound(normalizedValues)
-        mBindings.Add normalizedValues(i)
-    Next i
+    For I = LBound(normalizedValues) To UBound(normalizedValues)
+        mBindings.Add normalizedValues(I)
+    Next I
 
     Set WhereIn = Me
 End Function
 
+' Function: AndWhereIn
+' Adds an IN (...) condition with AND operator
+'
+' Parameters:
+'   col (String) - Column name
+'   values (Variant) - Array, Collection, or single value
+'
+' Returns: QueryBuilder (Self for method chaining)
+'
+' Example:
+'   === Code ===
+'   q.WhereClause("is_active", "=", True).AndWhereIn("status", Array("new", "pending"))
+'   ============
+'
 Public Function AndWhereIn(ByVal col As String, ByVal values As Variant) As QueryBuilder
     Set AndWhereIn = WhereIn(col, values, "AND")
 End Function
 
+' Function: OrWhereIn
+' Adds an IN (...) condition with OR operator
+'
+' Parameters:
+'   col (String) - Column name
+'   values (Variant) - Array, Collection, or single value
+'
+' Returns: QueryBuilder (Self for method chaining)
+'
+' Example:
+'   === Code ===
+'   q.WhereIn("status", Array("active", "pending")).OrWhereIn("role", Array("admin", "manager"))
+'   ============
+'
 Public Function OrWhereIn(ByVal col As String, ByVal values As Variant) As QueryBuilder
     Set OrWhereIn = WhereIn(col, values, "OR")
 End Function
 
-' WhereGroup
+' Function: WhereGroup
 ' Starts a grouped where block, allowing conditions to be enclosed in parentheses
 '
 ' Example:
+'   === Code ===
 '   q.WhereClause("tenant_id", "=", 10) _
 '    .AndWhereGroup() _
 '    .WhereClause("status", "=", "active") _
 '    .OrWhere("status", "=", "pending") _
 '    .EndWhereGroup() _
 '    .AndWhere("is_deleted", "=", 0)
+'   ============
 '
 Public Function WhereGroup(Optional ByVal boolOp As String = vbNullString) As QueryBuilder
     mWhere.Add Array(vbNullString, vbNullString, Empty, NormalizeBoolean(boolOp), False, Empty, Empty, "GROUP_START")
@@ -474,14 +581,32 @@ Public Function WhereGroup(Optional ByVal boolOp As String = vbNullString) As Qu
     Set WhereGroup = Me
 End Function
 
+' Function: AndWhereGroup
+' Starts a grouped WHERE block prefixed by AND
+'
+' Returns: QueryBuilder (Self for method chaining)
+'
 Public Function AndWhereGroup() As QueryBuilder
     Set AndWhereGroup = WhereGroup("AND")
 End Function
 
+' Function: OrWhereGroup
+' Starts a grouped WHERE block prefixed by OR
+'
+' Returns: QueryBuilder (Self for method chaining)
+'
 Public Function OrWhereGroup() As QueryBuilder
     Set OrWhereGroup = WhereGroup("OR")
 End Function
 
+' Function: EndWhereGroup
+' Closes the most recently opened grouped WHERE block
+'
+' Returns: QueryBuilder (Self for method chaining)
+'
+' Raises:
+'   Runtime error if no open group exists
+'
 Public Function EndWhereGroup() As QueryBuilder
     If mOpenWhereGroups <= 0 Then
         Err.Raise vbObjectError + 1004, "QueryBuilder.EndWhereGroup", "No open where group to close."
@@ -497,7 +622,9 @@ End Function
 ' SQL GENERATION AND EXECUTION METHODS
 ' ============================================================================
 
-' BuildSelectSql
+' Group: SQL Generation and Execution Methods
+
+' Function: BuildSelectSql
 ' Builds the complete SQL query string with parameterized placeholders
 '
 ' Returns: String - SQL query with ? placeholders for each parameter
@@ -526,7 +653,9 @@ End Function
 ' ============================================================================
 ' SQL CLAUSE GETTERS
 ' ============================================================================
-'
+
+' Group: SQL Clause Getters
+
 ' Each getter returns its fully-formed clause fragment (e.g., "WHERE [age] > ?")
 ' or an empty string when no value has been set.
 '
@@ -549,7 +678,7 @@ End Function
 '   q.GetWhereClause(includeBindings:=True)
 '   ' Returns: WHERE [status] = 'active' AND [age] > 18
 
-' GetSelectClause
+' Function: GetSelectClause
 ' Returns the SELECT clause (e.g., "SELECT [id], [name]")
 '
 Public Function GetSelectClause(Optional ByVal includeBindings As Boolean = False) As String
@@ -566,14 +695,14 @@ Public Function GetSelectClause(Optional ByVal includeBindings As Boolean = Fals
     GetSelectClause = clause
 End Function
 
-' GetFromClause
+' Function: GetFromClause
 ' Returns the FROM clause (e.g., "FROM [users]")
 '
 Public Function GetFromClause(Optional ByVal includeBindings As Boolean = False) As String
     GetFromClause = "FROM " & QuoteIdentifierPath(mTable)
 End Function
 
-' GetJoinClause
+' Function: GetJoinClause
 ' Returns all JOIN clauses as a single string, or empty string if none set
 ' (e.g., "INNER JOIN [orders] ON [users].[id] = [orders].[user_id]")
 '
@@ -585,7 +714,7 @@ Public Function GetJoinClause(Optional ByVal includeBindings As Boolean = False)
     End If
 End Function
 
-' GetWhereClause
+' Function: GetWhereClause
 ' Returns the WHERE clause (e.g., "WHERE [status] = ? AND [age] > ?")
 ' When includeBindings is True, ? placeholders are replaced with literal values.
 '
@@ -606,7 +735,7 @@ Public Function GetWhereClause(Optional ByVal includeBindings As Boolean = False
     End If
 End Function
 
-' GetWhereFilter
+' Function: GetWhereFilter
 ' Returns the WHERE clause without the "WHERE" (e.g., "[status] = 3 AND [age] > 17"), or empty string if not set
 ' Can be applied directly to a Form.Filter
 '
@@ -614,7 +743,7 @@ Public Function GetWhereFilter() As String
     GetWhereFilter = Trim(Replace(GetWhereClause(True), "WHERE", "", 1, 1, vbTextCompare))
 End Function
 
-' GetGroupByClause
+' Function: GetGroupByClause
 ' Returns the GROUP BY clause (e.g., "GROUP BY [category]"), or empty string if not set
 '
 Public Function GetGroupByClause(Optional ByVal includeBindings As Boolean = False) As String
@@ -625,7 +754,7 @@ Public Function GetGroupByClause(Optional ByVal includeBindings As Boolean = Fal
     End If
 End Function
 
-' GetOrderByClause
+' Function: GetOrderByClause
 ' Returns the ORDER BY clause (e.g., "ORDER BY [name] ASC"), or empty string if not set
 '
 Public Function GetOrderByClause(Optional ByVal includeBindings As Boolean = False) As String
@@ -636,7 +765,7 @@ Public Function GetOrderByClause(Optional ByVal includeBindings As Boolean = Fal
     End If
 End Function
 
-' GetLimitClause
+' Function: GetLimitClause
 ' Returns the LIMIT clause (e.g., "LIMIT 10"), or empty string if not set
 '
 Public Function GetLimitClause(Optional ByVal includeBindings As Boolean = False) As String
@@ -652,7 +781,7 @@ Public Function GetLimitClause(Optional ByVal includeBindings As Boolean = False
     End If
 End Function
 
-' GetOffsetClause
+' Function: GetOffsetClause
 ' Returns the OFFSET clause (e.g., "OFFSET 20"), or empty string if not set
 '
 Public Function GetOffsetClause(Optional ByVal includeBindings As Boolean = False) As String
@@ -678,7 +807,7 @@ Public Function GetOffsetClause(Optional ByVal includeBindings As Boolean = Fals
     End If
 End Function
 
-' ToSql
+' Function: ToSql
 ' Returns the complete SQL string with values interpolated (for testing/debugging)
 '
 ' Returns: String - Complete SQL query with all parameters interpolated into the string
@@ -689,14 +818,22 @@ End Function
 '   Use GetRows(), CountRows(), etc. instead for safe database queries.
 '
 ' Example:
+'   === Code ===
 '   Debug.Print q.Table("users").WhereClause("age", ">", 18).ToSql()
 '   ' Output: SELECT * FROM [users] WHERE [age] > 18
+'   ============
 '
 Public Function ToSql() As String
     ToSql = InterpolateBindings(BuildSelectSql())
 End Function
 
-' GetRows
+' ============================================================================
+'  CONNECTION EXECUTION METHODS
+' ============================================================================
+
+' Group: Connection Execution Methods
+
+' Function: GetRows
 ' Executes the SELECT query and returns an ADO Recordset with results
 '
 ' Parameters:
@@ -709,6 +846,7 @@ End Function
 '   Uses parameterized queries for SQL injection safety
 '
 ' Example:
+'   === Code ===
 '   Dim rs As Object
 '   Set rs = q.Table("users").SelectColumns("id, name").GetRows(conn)
 '   Do Until rs.EOF
@@ -716,6 +854,7 @@ End Function
 '       rs.MoveNext
 '   Loop
 '   rs.Close
+'   ============
 '
 Public Function GetRows(ByVal conn As Object) As Object
     Dim cmd As Object
@@ -730,7 +869,7 @@ Public Function GetRows(ByVal conn As Object) As Object
     Set GetRows = rs
 End Function
 
-' CountRows
+' Function: CountRows
 ' Executes a COUNT(*) query based on current WHERE and JOIN clauses
 '
 ' Parameters:
@@ -739,9 +878,11 @@ End Function
 ' Returns: Long - Count of rows matching the WHERE conditions
 '
 ' Example:
+'   === Code ===
 '   Dim totalRows As Long
 '   totalRows = q.Table("users").WhereClause("status", "=", "active").CountRows(conn)
 '   ' Uses: SELECT COUNT(*) AS [total] FROM [users] WHERE [status] = ?
+'   ============
 '
 Public Function CountRows(ByVal conn As Object) As Long
     Dim sql As String
@@ -761,7 +902,7 @@ Public Function CountRows(ByVal conn As Object) As Long
 
     Set rs = cmd.Execute
     If Not rs.EOF Then
-        totalValue = rs.Fields("total").Value
+        totalValue = rs.fields("total").value
         If IsNull(totalValue) Or IsEmpty(totalValue) Then
             CountRows = 0
         Else
@@ -770,7 +911,7 @@ Public Function CountRows(ByVal conn As Object) As Long
     End If
 End Function
 
-' DeleteRows
+' Function: DeleteRows
 ' Executes a DELETE query based on current WHERE clause
 '
 ' Parameters:
@@ -779,10 +920,12 @@ End Function
 ' Returns: Long - Number of rows deleted
 '
 ' Example:
+'   === Code ===
 '   Dim deletedCount As Long
 '   deletedCount = q.Table("users").WhereClause("status", "=", "inactive").DeleteRows(conn)
 '   MsgBox "Deleted " & deletedCount & " rows"
 '   ' Uses: DELETE FROM [users] WHERE [status] = ?
+'   ============
 '
 Public Function DeleteRows(ByVal conn As Object) As Long
     Dim sql As String
@@ -800,7 +943,7 @@ Public Function DeleteRows(ByVal conn As Object) As Long
     DeleteRows = recordsAffected
 End Function
 
-' InsertRow
+' Function: InsertRow
 ' Executes an INSERT query with the provided column values
 '
 ' Parameters:
@@ -810,6 +953,7 @@ End Function
 ' Returns: Long - Number of rows inserted (usually 1)
 '
 ' Example:
+'   === Code ===
 '   Dim dict As Object
 '   Set dict = CreateObject("Scripting.Dictionary")
 '   dict.Add "name", "John Doe"
@@ -817,16 +961,17 @@ End Function
 '   dict.Add "age", 30
 '   Dim result As Long
 '   result = q.Table("users").InsertRow(conn, dict)
+'   ============
 '
 Public Function InsertRow(ByVal conn As Object, ByVal data As Object) As Long
     ' data is expected to be Scripting.Dictionary (late-bound)
-    Dim keys As Variant, i As Long, placeholders As String, columns As String
-    keys = data.Keys
+    Dim keys As Variant, I As Long, placeholders As String, columns As String
+    keys = data.keys
 
-    For i = LBound(keys) To UBound(keys)
-        columns = columns & IIf(i > LBound(keys), ", ", "") & QuoteIdentifierPath(CStr(keys(i)))
-        placeholders = placeholders & IIf(i > LBound(keys), ", ", "") & "?"
-    Next i
+    For I = LBound(keys) To UBound(keys)
+        columns = columns & IIf(I > LBound(keys), ", ", "") & QuoteIdentifierPath(CStr(keys(I)))
+        placeholders = placeholders & IIf(I > LBound(keys), ", ", "") & "?"
+    Next I
 
     Dim cmd As Object, recordsAffected As Long
     Set cmd = CreateObject("ADODB.Command")
@@ -834,15 +979,15 @@ Public Function InsertRow(ByVal conn As Object, ByVal data As Object) As Long
     cmd.CommandType = adCmdText
     cmd.CommandText = "INSERT INTO " & QuoteIdentifierPath(mTable) & " (" & columns & ") VALUES (" & placeholders & ")"
 
-    For i = LBound(keys) To UBound(keys)
-        cmd.Parameters.Append cmd.CreateParameter(, adVariant, adParamInput, , data(keys(i)))
-    Next i
+    For I = LBound(keys) To UBound(keys)
+        cmd.Parameters.Append cmd.CreateParameter(, adVariant, adParamInput, , data(keys(I)))
+    Next I
 
     cmd.Execute recordsAffected, , adExecuteNoRecords
     InsertRow = recordsAffected
 End Function
 
-' UpdateRows
+' Function: UpdateRows
 ' Executes an UPDATE query with the provided column values and WHERE conditions
 '
 ' Parameters:
@@ -855,21 +1000,23 @@ End Function
 '   WHERE clause conditions must be set via WhereClause/AndWhere/OrWhere before calling UpdateRows
 '
 ' Example:
+'   === Code ===
 '   Dim dict As Object
 '   Set dict = CreateObject("Scripting.Dictionary")
 '   dict.Add "status", "inactive"
 '   dict.Add "last_updated", Now()
 '   Dim result As Long
 '   result = q.Table("users").WhereClause("id", "=", 42).UpdateRows(conn, dict)
+'   ============
 '
 Public Function UpdateRows(ByVal conn As Object, ByVal data As Object) As Long
     ' data is expected to be Scripting.Dictionary (late-bound)
-    Dim keys As Variant, i As Long, setClause As String
-    keys = data.Keys
+    Dim keys As Variant, I As Long, setClause As String
+    keys = data.keys
 
-    For i = LBound(keys) To UBound(keys)
-        setClause = setClause & IIf(i > LBound(keys), ", ", "") & QuoteIdentifierPath(CStr(keys(i))) & " = ?"
-    Next i
+    For I = LBound(keys) To UBound(keys)
+        setClause = setClause & IIf(I > LBound(keys), ", ", "") & QuoteIdentifierPath(CStr(keys(I))) & " = ?"
+    Next I
 
     Dim sql As String
     sql = "UPDATE " & QuoteIdentifierPath(mTable) & " SET " & setClause
@@ -881,13 +1028,13 @@ Public Function UpdateRows(ByVal conn As Object, ByVal data As Object) As Long
     cmd.CommandType = adCmdText
     cmd.CommandText = sql
 
-    For i = LBound(keys) To UBound(keys)
-        cmd.Parameters.Append cmd.CreateParameter(, adVariant, adParamInput, , data(keys(i)))
-    Next i
+    For I = LBound(keys) To UBound(keys)
+        cmd.Parameters.Append cmd.CreateParameter(, adVariant, adParamInput, , data(keys(I)))
+    Next I
 
-    For i = 1 To mBindings.Count
-        cmd.Parameters.Append cmd.CreateParameter(, adVariant, adParamInput, , mBindings(i))
-    Next i
+    For I = 1 To mBindings.Count
+        cmd.Parameters.Append cmd.CreateParameter(, adVariant, adParamInput, , mBindings(I))
+    Next I
 
     cmd.Execute recordsAffected, , adExecuteNoRecords
     UpdateRows = recordsAffected
@@ -898,30 +1045,32 @@ End Function
 ' PRIVATE HELPER METHODS
 ' ============================================================================
 
-' BuildWhereClause (PRIVATE)
+' Group: Private Helper Methods
+
+' Function: BuildWhereClause [Private]
 ' Constructs the WHERE clause portion of SQL from stored condition array
 '
 ' Returns: String - WHERE clause fragment with ? placeholders (e.g., "age > ? AND status = ?")
 '
 ' Notes:
-'   • Handles regular, BETWEEN, IN, and grouped WHERE conditions
-'   • BETWEEN conditions generate "column BETWEEN ? AND ?" with two placeholders
-'   • IN conditions generate "column IN (?, ?, ...)" based on input size
-'   • Properly handles AND/OR boolean operators
-'   • Returns empty string if no WHERE conditions exist
+'   - Handles regular, BETWEEN, IN, and grouped WHERE conditions
+'   - BETWEEN conditions generate "column BETWEEN ? AND ?" with two placeholders
+'   - IN conditions generate "column IN (?, ?, ...)" based on input size
+'   - Properly handles AND/OR boolean operators
+'   - Returns empty string if no WHERE conditions exist
 '
 Private Function BuildWhereClause() As String
     Dim parts As Collection: Set parts = New Collection
-    Dim item As Variant
+    Dim Item As Variant
     Dim col As String, op As String, boolOp As String
     Dim clauseType As String
     Dim values As Variant
 
-    For Each item In mWhere
-        col = CStr(item(0))
-        op = CStr(item(1))
-        boolOp = CStr(item(3))
-        clauseType = GetWhereClauseType(item)
+    For Each Item In mWhere
+        col = CStr(Item(0))
+        op = CStr(Item(1))
+        boolOp = CStr(Item(3))
+        clauseType = GetWhereClauseType(Item)
 
         Select Case clauseType
             Case "GROUP_START"
@@ -940,13 +1089,13 @@ Private Function BuildWhereClause() As String
                 AppendWherePart parts, QuoteIdentifierPath(col) & " " & op & " ? AND ?", boolOp
 
             Case "IN"
-                values = item(2)
+                values = Item(2)
                 AppendWherePart parts, QuoteIdentifierPath(col) & " IN (" & BuildPlaceholders(values) & ")", boolOp
 
             Case Else
                 AppendWherePart parts, QuoteIdentifierPath(col) & " " & op & " ?", boolOp
         End Select
-    Next item
+    Next Item
 
     If mOpenWhereGroups <> 0 Then
         Err.Raise vbObjectError + 1005, "QueryBuilder", "Unclosed where-group detected. Call EndWhereGroup() for each WhereGroup()."
@@ -955,6 +1104,10 @@ Private Function BuildWhereClause() As String
     BuildWhereClause = JoinCollectionItems(parts, " ")
 End Function
 
+' Sub: AppendWherePart [Private]
+' Adds one rendered WHERE fragment to the parts collection, applying the
+' boolean prefix only when the fragment is not the first item in the group.
+'
 Private Sub AppendWherePart(ByRef parts As Collection, ByVal clauseSql As String, ByVal boolOp As String)
     If ShouldIgnoreBooleanPrefix(parts) Then
         parts.Add clauseSql
@@ -965,6 +1118,10 @@ Private Sub AppendWherePart(ByRef parts As Collection, ByVal clauseSql As String
     End If
 End Sub
 
+' Function: ShouldIgnoreBooleanPrefix [Private]
+' Returns True when the next WHERE fragment should be added without an
+' AND/OR prefix, such as the first clause or the first clause after "(".
+'
 Private Function ShouldIgnoreBooleanPrefix(ByVal parts As Collection) As Boolean
     If parts.Count = 0 Then
         ShouldIgnoreBooleanPrefix = True
@@ -974,16 +1131,24 @@ Private Function ShouldIgnoreBooleanPrefix(ByVal parts As Collection) As Boolean
     ShouldIgnoreBooleanPrefix = (Right$(Trim$(CStr(parts(parts.Count))), 1) = "(")
 End Function
 
-Private Function GetWhereClauseType(ByVal item As Variant) As String
-    If UBound(item) >= 7 Then
-        GetWhereClauseType = CStr(item(7))
-    ElseIf CBool(item(4)) Then
+' Function: GetWhereClauseType [Private]
+' Resolves the stored condition-array payload into a clause type keyword
+' such as COMPARE, BETWEEN, IN, GROUP_START, or GROUP_END.
+'
+Private Function GetWhereClauseType(ByVal Item As Variant) As String
+    If UBound(Item) >= 7 Then
+        GetWhereClauseType = CStr(Item(7))
+    ElseIf CBool(Item(4)) Then
         GetWhereClauseType = "BETWEEN"
     Else
         GetWhereClauseType = "COMPARE"
     End If
 End Function
 
+' Function: NormalizeBoolean [Private]
+' Validates and normalizes a boolean operator to uppercase AND or OR.
+' Returns an empty string when no operator is supplied.
+'
 Private Function NormalizeBoolean(ByVal boolOp As String) As String
     Dim normalized As String
     normalized = UCase$(Trim$(boolOp))
@@ -1000,9 +1165,13 @@ Private Function NormalizeBoolean(ByVal boolOp As String) As String
     NormalizeBoolean = normalized
 End Function
 
+' Function: NormalizeInValues [Private]
+' Converts the supported WhereIn inputs into a zero-based Variant array.
+' Accepts arrays, Collections, and single scalar values.
+'
 Private Function NormalizeInValues(ByVal values As Variant) As Variant
     Dim arr() As Variant
-    Dim i As Long
+    Dim I As Long
 
     If IsArray(values) Then
         If (UBound(values) - LBound(values) + 1) <= 0 Then
@@ -1019,9 +1188,9 @@ Private Function NormalizeInValues(ByVal values As Variant) As Variant
             End If
 
             ReDim arr(0 To values.Count - 1)
-            For i = 1 To values.Count
-                arr(i - 1) = values(i)
-            Next i
+            For I = 1 To values.Count
+                arr(I - 1) = values(I)
+            Next I
             NormalizeInValues = arr
             Exit Function
         End If
@@ -1032,54 +1201,72 @@ Private Function NormalizeInValues(ByVal values As Variant) As Variant
     NormalizeInValues = arr
 End Function
 
+' Function: BuildPlaceholders [Private]
+' Creates a comma-delimited placeholder list sized to the supplied values.
+' Example output: "?, ?, ?"
+'
 Private Function BuildPlaceholders(ByVal values As Variant) As String
-    Dim i As Long
+    Dim I As Long
     Dim token As String
 
-    For i = LBound(values) To UBound(values)
-        If i > LBound(values) Then token = token & ", "
+    For I = LBound(values) To UBound(values)
+        If I > LBound(values) Then token = token & ", "
         token = token & "?"
-    Next i
+    Next I
 
     BuildPlaceholders = token
 End Function
 
+' Sub: EnsureOrderByForSqlServerOffset [Private]
+' Enforces SQL Server's requirement that OFFSET/FETCH pagination must be
+' paired with an ORDER BY clause.
+'
 Private Sub EnsureOrderByForSqlServerOffset()
     If LenB(mOrderBy) = 0 Then
         Err.Raise vbObjectError + 1006, "QueryBuilder", "SQL Server OFFSET/FETCH requires ORDER BY. Call OrderByClause(...) before SkipRows(...)."
     End If
 End Sub
 
+' Function: QuoteColumnList [Private]
+' Bracket-quotes each comma-delimited column reference in a SELECT list.
+'
 Private Function QuoteColumnList(ByVal columnList As String) As String
     Dim parts() As String
-    Dim i As Long
+    Dim I As Long
     Dim output As String
 
     parts = Split(columnList, ",")
-    For i = LBound(parts) To UBound(parts)
-        If i > LBound(parts) Then output = output & ", "
-        output = output & QuoteIdentifierPath(Trim$(parts(i)))
-    Next i
+    For I = LBound(parts) To UBound(parts)
+        If I > LBound(parts) Then output = output & ", "
+        output = output & QuoteIdentifierPath(Trim$(parts(I)))
+    Next I
 
     QuoteColumnList = output
 End Function
 
+' Function: QuoteCollectionIdentifiers [Private]
+' Bracket-quotes each identifier in a Collection and joins the results with commas.
+'
 Private Function QuoteCollectionIdentifiers(ByVal items As Collection) As String
-    Dim i As Long
+    Dim I As Long
     Dim output As String
 
-    For i = 1 To items.Count
-        If i > 1 Then output = output & ", "
-        output = output & QuoteIdentifierPath(CStr(items(i)))
-    Next i
+    For I = 1 To items.Count
+        If I > 1 Then output = output & ", "
+        output = output & QuoteIdentifierPath(CStr(items(I)))
+    Next I
 
     QuoteCollectionIdentifiers = output
 End Function
 
+' Function: QuoteIdentifierPath [Private]
+' Bracket-quotes a single identifier, dotted path, or alias expression while
+' leaving wildcard tokens and SQL expressions intact.
+'
 Private Function QuoteIdentifierPath(ByVal identifier As String) As String
     Dim rawValue As String
     Dim pieces() As String
-    Dim i As Long
+    Dim I As Long
     Dim quoted As String
     Dim asPos As Long
     Dim lhs As String
@@ -1123,14 +1310,17 @@ Private Function QuoteIdentifierPath(ByVal identifier As String) As String
     End If
 
     pieces = Split(rawValue, ".")
-    For i = LBound(pieces) To UBound(pieces)
-        If i > LBound(pieces) Then quoted = quoted & "."
-        quoted = quoted & QuoteIdentifierSegment(Trim$(pieces(i)))
-    Next i
+    For I = LBound(pieces) To UBound(pieces)
+        If I > LBound(pieces) Then quoted = quoted & "."
+        quoted = quoted & QuoteIdentifierSegment(Trim$(pieces(I)))
+    Next I
 
     QuoteIdentifierPath = quoted
 End Function
 
+' Function: QuoteIdentifierSegment [Private]
+' Bracket-quotes one identifier segment unless it is already quoted or is a wildcard.
+'
 Private Function QuoteIdentifierSegment(ByVal segment As String) As String
     Dim cleaned As String
     cleaned = Trim$(segment)
@@ -1150,28 +1340,28 @@ Private Function QuoteIdentifierSegment(ByVal segment As String) As String
         Exit Function
     End If
 
-    QuoteIdentifierSegment = "[" & Replace(cleaned, "]", "]]" ) & "]"
+    QuoteIdentifierSegment = "[" & Replace(cleaned, "]", "]]") & "]"
 End Function
 
-' AddBindingsToCommand (PRIVATE)
+' Sub: AddBindingsToCommand [Private]
 ' Adds all parameter bindings to an ADO Command object as input parameters
 '
 ' Parameters:
 '   cmd (Object) - ADO.Command object to receive parameters
 '
 ' Notes:
-'   • Called automatically before executing any database query
-'   • Parameters are added in the same order as placeholders in SQL
-'   • Ensures proper SQL injection prevention
+'   - Called automatically before executing any database query
+'   - Parameters are added in the same order as placeholders in SQL
+'   - Ensures proper SQL injection prevention
 '
 Private Sub AddBindingsToCommand(ByVal cmd As Object)
-    Dim i As Long
-    For i = 1 To mBindings.Count
-        cmd.Parameters.Append cmd.CreateParameter(, adVariant, adParamInput, , mBindings(i))
-    Next i
+    Dim I As Long
+    For I = 1 To mBindings.Count
+        cmd.Parameters.Append cmd.CreateParameter(, adVariant, adParamInput, , mBindings(I))
+    Next I
 End Sub
 
-' JoinCollectionItems (PRIVATE)
+' Function: JoinCollectionItems [Private]
 ' Joins all items in a Collection into a delimited string
 '
 ' Parameters:
@@ -1185,15 +1375,15 @@ End Sub
 '   Returns: "id, name, email"
 '
 Private Function JoinCollectionItems(ByVal items As Collection, ByVal delimiter As String) As String
-    Dim i As Long, s As String
-    For i = 1 To items.Count
-        If i > 1 Then s = s & delimiter
-        s = s & CStr(items(i))
-    Next i
-    JoinCollectionItems = s
+    Dim I As Long, S As String
+    For I = 1 To items.Count
+        If I > 1 Then S = S & delimiter
+        S = S & CStr(items(I))
+    Next I
+    JoinCollectionItems = S
 End Function
 
-' InterpolateBindings (PRIVATE)
+' Function: InterpolateBindings [Private]
 ' Replaces all ? placeholders in a SQL string with their SqlLiteral values
 ' from mBindings, in positional order.
 '
@@ -1203,18 +1393,18 @@ End Function
 ' Returns: String - SQL with literals substituted for each ?
 '
 ' Notes:
-'   • Shared by ToSql() and GetWhereClause(includeBindings:=True)
-'   • For inspection/debugging only - do NOT use for database execution
+'   - Shared by ToSql() and GetWhereClause(includeBindings:=True)
+'   - For inspection/debugging only - do NOT use for database execution
 '
 Private Function InterpolateBindings(ByVal sql As String) As String
-    Dim i As Long
-    For i = 1 To mBindings.Count
-        sql = ReplaceFirst(sql, "?", SqlLiteral(mBindings(i)))
-    Next i
+    Dim I As Long
+    For I = 1 To mBindings.Count
+        sql = ReplaceFirst(sql, "?", SqlLiteral(mBindings(I)))
+    Next I
     InterpolateBindings = sql
 End Function
 
-' ReplaceFirst (PRIVATE)
+' Function: ReplaceFirst [Private]
 ' Replaces the first occurrence of a search string with replacement text
 '
 ' Parameters:
@@ -1225,42 +1415,46 @@ End Function
 ' Returns: String - Modified string with first occurrence replaced
 '
 ' Notes:
-'   • Used by ToSql() to interpolate parameter values for inspection
-'   • Only replaces FIRST occurrence, preserving subsequent placeholders
+'   - Used by ToSql() to interpolate parameter values for inspection/debugging
+'   - Only replaces FIRST occurrence, preserving subsequent placeholders
 '
 Private Function ReplaceFirst(ByVal text As String, ByVal findText As String, ByVal replaceText As String) As String
-    Dim p As Long
-    p = InStr(1, text, findText, vbBinaryCompare)
-    If p = 0 Then
+    Dim P As Long
+    P = InStr(1, text, findText, vbBinaryCompare)
+    If P = 0 Then
         ReplaceFirst = text
     Else
-        ReplaceFirst = Left$(text, p - 1) & replaceText & Mid$(text, p + Len(findText))
+        ReplaceFirst = Left$(text, P - 1) & replaceText & Mid$(text, P + Len(findText))
     End If
 End Function
 
-' SqlLiteral (PRIVATE)
+' Function: SqlLiteral [Private]
 ' Converts a value to a SQL literal string for inspection/debugging
 '
 ' Parameters:
 '   v (Variant) - Value to convert
 '
 ' Returns: String - SQL literal representation:
-'   • NULL for Null values
-'   • Numeric string for numeric values (no quotes, via VBA built-in IsNumeric)
-'   • Quoted and escaped string for text values
+'   - NULL for Null values
+'   - Numeric string for numeric values (no quotes, via VBA built-in IsNumeric)
+'   - Quoted and escaped string for text values
 '
 ' Example:
+'   === Code ===
 '   SqlLiteral(42) returns "42"
 '   SqlLiteral("John's") returns "'John''s'" (escaped for SQL)
 '   SqlLiteral(Null) returns "NULL"
+'   ============
 '
-Private Function SqlLiteral(ByVal v As Variant) As String
-    If IsNull(v) Then
+Private Function SqlLiteral(ByVal V As Variant) As String
+    If IsNull(V) Then
         SqlLiteral = "NULL"
-    ElseIf IsNumeric(v) Then
-        SqlLiteral = CStr(v)
+    ElseIf IsNumeric(V) Then
+        SqlLiteral = CStr(V)
     Else
-        SqlLiteral = "'" & Replace(CStr(v), "'", "''") & "'"
+        SqlLiteral = "'" & Replace(CStr(V), "'", "''") & "'"
     End If
 End Function
+
+
 
