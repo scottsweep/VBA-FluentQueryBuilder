@@ -5,7 +5,7 @@
 
 Fluent SQL query builder for VBA (Excel, Access, VB6), with parameterized ADO execution.
 
-`QueryBuilder.cls` helps you build SQL via chainable methods instead of manual string concatenation, while still allowing full SQL inspection through clause getters.
+QueryBuilder helps you build SQL via chainable methods instead of manual string concatenation, while still allowing full SQL inspection through clause getters.
 
 ## Features
 
@@ -54,7 +54,7 @@ Debug.Print sql
 
 ## SQL Server Pagination (TOP / OFFSET FETCH)
 
-Enable SQL Server mode when targeting SQL Server pagination syntax.
+Enable SQL Server mode when targeting SQL Server pagination syntax. Enabled by default.
 
 ```vb
 Dim q As QueryBuilder
@@ -81,6 +81,26 @@ Debug.Print q.Table("users") _
 ```
 
 > In SQL Server mode, `SkipRows(...)` requires `OrderByClause(...)`.
+
+## Standard Pagination (TOP / OFFSET FETCH)
+
+Enable Standard mode when targeting Standard pagination syntax (i.e, Postgres, Mariadb, etc.).
+
+```vb
+Dim q As QueryBuilder
+Set q = New QueryBuilder
+
+' LIMIT / OFFSET
+Set q = New QueryBuilder
+Debug.Print q.Table("users") _
+             .UseStandardPagination() _
+             .SelectColumns("id, name") _
+             .OrderByClause("id", "asc") _
+             .SkipRows(20) _
+             .Take(10) _
+             .ToSql()
+' SELECT [id], [name] FROM [users] ORDER BY [id] ASC OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY 20
+```
 
 ## WHERE Examples
 

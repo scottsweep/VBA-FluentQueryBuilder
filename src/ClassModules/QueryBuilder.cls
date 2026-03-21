@@ -315,10 +315,11 @@ Public Function SkipRows(ByVal offsetValue As Long) As QueryBuilder
 End Function
 
 ' Function: UseSqlServerPagination
-' Enables SQL Server-style pagination output.
-'   - limit only: SELECT TOP (n) ...
-'   - offset only: ... ORDER BY ... OFFSET n ROWS
-'   - offset + limit: ... ORDER BY ... OFFSET n ROWS FETCH NEXT m ROWS ONLY
+' Enables SQL Server-style pagination output
+' Enabled by default
+'   - limit only: SELECT TOP (n) ..
+'   - offset only: .. ORDER BY .. OFFSET n ROWS
+'   - offset + limit: .. ORDER BY .. OFFSET n ROWS FETCH NEXT m ROWS ONLY
 '
 Public Function UseSqlServerPagination(Optional ByVal enabled As Boolean = True) As QueryBuilder
     mUseSqlServerPagination = enabled
@@ -326,7 +327,7 @@ Public Function UseSqlServerPagination(Optional ByVal enabled As Boolean = True)
 End Function
 
 ' Function: UseStandardPagination
-' Restores default LIMIT / OFFSET output.
+' Enable Standard mode when targeting Standard pagination syntax (i.e, Postgres, Mariadb, etc.)
 '
 Public Function UseStandardPagination() As QueryBuilder
     mUseSqlServerPagination = False
