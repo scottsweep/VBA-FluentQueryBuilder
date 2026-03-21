@@ -3,8 +3,11 @@ Option Explicit
 
 ' Class: QueryBuilderDemo
 ' Demo module showing QueryBuilder usage
+'
 ' Requires: Microsoft ActiveX Data Objects 2.8 Library (or later)
-
+'
+' <View Source: https://github.com/scottsweep/VBA-FluentQueryBuilder/blob/main/src/Modules/modQueryBuilderDemo.bas>
+'
 ' Function: DemoQueryBuilder
 ' Demonstrates various QueryBuilder features by constructing different SQL queries and printing them to the Immediate Window
 Public Sub DemoQueryBuilder()

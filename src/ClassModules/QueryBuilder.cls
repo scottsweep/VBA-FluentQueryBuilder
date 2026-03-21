@@ -28,6 +28,9 @@ Const MODULE_VERSION = "2026.03.20"  ' call [QueryBuilder].MODULE_VERSION  as ot
 '-------------------------------------------------------------------------------'
 
 ' Class: QueryBuilder
+'
+' <View Source: https://github.com/scottsweep/VBA-FluentQueryBuilder/blob/main/src/ClassModules/QueryBuilder.cls>
+'
 ' ============================================================================
 ' About: QueryBuilder Class - Fluent SQL Query Builder for VBA
 ' ============================================================================
