@@ -99,7 +99,7 @@ Debug.Print q.Table("users") _
              .SkipRows(20) _
              .Take(10) _
              .ToSql()
-' SELECT [id], [name] FROM [users] ORDER BY [id] ASC OFFSET 20 ROWS FETCH NEXT 10 ROWS ONLY 20
+' SELECT [id], [name] FROM [users] ORDER BY [id] ASC LIMIT 10 OFFSET 20
 ```
 
 ## WHERE Examples
@@ -113,6 +113,7 @@ sql = q.Table("users") _
        .AndWhere("age", ">=", 18) _
        .OrWhere("is_admin", "=", 1) _
        .ToSql()
+' SELECT * FROM [users] WHERE [status] = 'active' AND [age] >= 18 OR [is_admin] = 1
 ```
 
 ### BETWEEN
@@ -133,6 +134,7 @@ sql = q.Table("users") _
        .WhereIn("role", Array("admin", "manager", "editor")) _
        .AndWhere("active", "=", 1) _
        .ToSql()
+' SELECT [id], [name], [role] FROM [users] WHERE [role] IN ('admin', 'manager', 'editor') AND [active] = 1       
 ```
 
 ### Grouped conditions
@@ -148,6 +150,7 @@ sql = q.Table("orders") _
        .EndWhereGroup() _
        .AndWhereBetween("total", 100, 1000) _
        .ToSql()
+' SELECT [id], [status], [total] FROM [orders] WHERE [tenant_id] = 42 AND ( [status] = 'pending' OR [status] = 'processing' OR [status] = 'backorder' ) AND [total] BETWEEN 100 AND 1000       
 ```
 
 ## Clause Getters
