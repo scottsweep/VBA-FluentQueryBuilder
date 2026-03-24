@@ -1,4 +1,4 @@
-![Static Badge](https://img.shields.io/badge/Linted_By-Lint_VBA-brighgreen)(https://github.com/Vba-actions/lint-vba)
+[![Static Badge](https://img.shields.io/badge/Linted_By-Lint_VBA-brighgreen)](https://github.com/Vba-actions/lint-vba)
 [![Lint VBA](https://github.com/scottsweep/VBA-FluentQueryBuilder/actions/workflows/lint_vba.yml/badge.svg?branch=main)](https://github.com/scottsweep/VBA-FluentQueryBuilder/actions/workflows/lint_vba.yml)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/scottsweep/VBA-FluentQueryBuilder)](https://github.com/scottsweep/VBA-FluentQueryBuilder/releases)
 <a href="https://scottsweep.github.io/VBA-FluentQueryBuilder/#VisualBasicClass:QueryBuilder"><img src="https://img.shields.io/badge/code-documented-green.svg"/></a>
